@@ -305,6 +305,18 @@ namespace ImGui
             RenderTextWrapped( text_, text_end_, true );
         }
 
+		void RenderColoredTextWrapped(const char* text_, const char* text_end_, const char* color_)
+		{
+			int i[3]; // RGB only
+			if (sscanf(color_, "%02X%02X%02X", (unsigned int*)&i[0], (unsigned int*)&i[1], (unsigned int*)&i[2]) > 0)
+			{
+				const ImVec4 color = ImVec4(i[0] / 255.0f, i[1] / 255.0f, i[2] / 255.0f, 1.0f);
+				ImGui::PushStyleColor(ImGuiCol_Text, color);
+				RenderTextWrapped(text_, text_end_, true);
+				ImGui::PopStyleColor();
+			}
+		}
+
         bool RenderLinkText( const char* text_, const char* text_end_, const Link& link_, const ImGuiStyle& style_, 
             const char* markdown_, const MarkdownConfig& mdConfig_, const char** linkHoverStart_ );
 
@@ -356,6 +368,7 @@ namespace ImGui
         TextBlock text;
         TextBlock url;
         bool isImage = false;
+		bool isColor = false;
     };
 
     inline void UnderLine( ImColor col_ )
@@ -524,6 +537,10 @@ namespace ImGui
                 {
                     link.state = Link::HAS_SQUARE_BRACKETS_ROUND_BRACKET_OPEN;
                     link.url.start = i + 1;
+					if (i > 0 && markdown_[i + 1] == '#')
+					{
+						link.isColor = true;
+					}
                 }
                 break;
             case Link::HAS_SQUARE_BRACKETS_ROUND_BRACKET_OPEN:
@@ -566,7 +583,11 @@ namespace ImGui
                             }
                         }
                     }
-                    else                 // it's a link, render it.
+					else if ( link.isColor )
+					{
+						textRegion.RenderColoredTextWrapped(markdown_ + link.text.start, markdown_ + link.text.start + link.text.size(), markdown_ + link.url.start + 1);
+					}
+                    else // it's a link, render it.
                     {
                         textRegion.RenderLinkTextWrapped( markdown_ + link.text.start, markdown_ + link.text.start + link.text.size(), link, style, markdown_, mdConfig_, &linkHoverStart, false );
                     }
